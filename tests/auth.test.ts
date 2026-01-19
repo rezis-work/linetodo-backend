@@ -21,12 +21,19 @@ describe('Auth API', () => {
       return;
     }
 
-    // Clean up before each test
+    // Clean up before each test - delete in correct order to avoid foreign key violations
     try {
       await prisma.refreshToken.deleteMany();
+      await prisma.workspaceMember.deleteMany();
+      await prisma.workspace.deleteMany();
+      await prisma.todoComment.deleteMany();
+      await prisma.todo.deleteMany();
+      await prisma.calendarEvent.deleteMany();
+      await prisma.embeddingItem.deleteMany();
       await prisma.user.deleteMany();
-    } catch {
-      // Ignore cleanup errors
+    } catch (error) {
+      // Log cleanup errors for debugging
+      console.warn('Cleanup error:', error);
     }
   });
 
@@ -127,6 +134,22 @@ describe('Auth API', () => {
       // Verify user exists before making API call
       expect(user).toBeDefined();
       expect(user.id).toBeDefined();
+
+      // Verify user exists in database (ensure it's committed and visible)
+      const verifyUser = await prisma.user.findUnique({
+        where: { id: user.id },
+      });
+      expect(verifyUser).toBeDefined();
+      expect(verifyUser?.id).toBe(user.id);
+      expect(verifyUser?.email).toBe('login@example.com');
+
+      // Also verify from app's Prisma instance to ensure both see the same data
+      const { prisma: appPrisma } = await import('../src/lib/prisma.js');
+      const appVerifyUser = await appPrisma.user.findUnique({
+        where: { id: user.id },
+      });
+      expect(appVerifyUser).toBeDefined();
+      expect(appVerifyUser?.id).toBe(user.id);
 
       const response = await request(app)
         .post('/auth/login')

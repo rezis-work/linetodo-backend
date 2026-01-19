@@ -114,6 +114,15 @@ export async function login(input: LoginInput): Promise<AuthResponse> {
   } catch (error) {
     // Handle errors from createRefreshToken
     if (error && typeof error === 'object' && 'statusCode' in error) {
+      // If user not found error, treat as invalid credentials
+      const statusCode = (error as { statusCode?: number }).statusCode;
+      if (statusCode === 404) {
+        const invalidError = new Error('Invalid email or password') as Error & {
+          statusCode: number;
+        };
+        invalidError.statusCode = 401;
+        throw invalidError;
+      }
       throw error;
     }
     // Convert unexpected errors to 500

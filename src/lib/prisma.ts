@@ -18,7 +18,7 @@ function getDatabaseUrl(): string {
 // Use same connection settings as test Prisma instance for consistency
 const pool = new Pool({
   connectionString: getDatabaseUrl(),
-  // In test mode, use single connection like test helper
+  // In test mode, use single connection like test helper to ensure consistency
   ...(env.NODE_ENV === 'test' && { max: 1 }),
 });
 

@@ -6,6 +6,15 @@ let prisma: PrismaClient | null = null;
 let pool: Pool | null = null;
 let dbAvailable: boolean | null = null;
 
+// Export pool and adapter so app can use them in test mode
+export function getTestPool(): Pool | null {
+  return pool;
+}
+
+export function getTestPrismaClientInstance(): PrismaClient | null {
+  return prisma;
+}
+
 /**
  * Get DATABASE_URL from environment, handling test mode
  */
