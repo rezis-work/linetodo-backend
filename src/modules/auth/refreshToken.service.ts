@@ -85,10 +85,16 @@ export async function findRefreshToken(
 
 /**
  * Revoke a refresh token
+ * @param tokenHash - Token hash to revoke
+ * @param tx - Optional transaction client (for use within transactions)
  */
-export async function revokeRefreshToken(tokenHash: string): Promise<void> {
+export async function revokeRefreshToken(
+  tokenHash: string,
+  tx?: Prisma.TransactionClient
+): Promise<void> {
+  const client = tx || prisma;
   // Use updateMany to avoid error if token doesn't exist
-  await prisma.refreshToken.updateMany({
+  await client.refreshToken.updateMany({
     where: { 
       tokenHash,
       revokedAt: null, // Only revoke if not already revoked
@@ -114,16 +120,20 @@ export async function revokeAllUserTokens(userId: string): Promise<void> {
 
 /**
  * Rotate refresh token: revoke old, create new
+ * This operation is atomic - both revoke and create happen in a transaction
  */
 export async function rotateRefreshToken(
   oldTokenHash: string,
   newToken: string,
   userId: string
 ): Promise<{ id: string; tokenHash: string; expiresAt: Date }> {
-  // Revoke old token
-  await revokeRefreshToken(oldTokenHash);
+  // Perform rotation atomically in a transaction
+  return await prisma.$transaction(async (tx) => {
+    // Revoke old token
+    await revokeRefreshToken(oldTokenHash, tx);
 
-  // Create new token
-  return createRefreshToken(userId, newToken);
+    // Create new token
+    return createRefreshToken(userId, newToken, tx);
+  });
 }
 
