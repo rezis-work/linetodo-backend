@@ -7,7 +7,12 @@ export default defineConfig({
     include: ['tests/**/*.test.ts'],
     setupFiles: ['./tests/setup.ts'],
     // Run tests sequentially to avoid database conflicts
-    threads: false,
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
     maxConcurrency: 1,
     // Ensure test files also run sequentially
     fileParallelism: false,
