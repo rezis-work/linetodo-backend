@@ -6,6 +6,9 @@ export default defineConfig({
     environment: 'node',
     include: ['tests/**/*.test.ts'],
     setupFiles: ['./tests/setup.ts'],
+    // Run tests sequentially to avoid database conflicts
+    threads: false,
+    maxConcurrency: 1,
     env: {
       // Use TEST_DATABASE_URL if provided, otherwise use DATABASE_URL from .env
       // If neither is set, tests will skip database operations
