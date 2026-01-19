@@ -162,45 +162,42 @@ describe('Database Tests', () => {
 
       const passwordHash = await hashPassword('password123');
 
-      const owner = await prisma.user.create({
-        data: {
-          email: `owner-member-${Date.now()}@example.com`,
-          passwordHash,
-        },
+      // Use transaction to ensure atomicity and prevent cleanup interference
+      const result = await prisma.$transaction(async (tx) => {
+        const owner = await tx.user.create({
+          data: {
+            email: `owner-member-${Date.now()}@example.com`,
+            passwordHash,
+          },
+        });
+
+        const member = await tx.user.create({
+          data: {
+            email: `member-${Date.now()}@example.com`,
+            passwordHash,
+          },
+        });
+
+        const workspace = await tx.workspace.create({
+          data: {
+            name: 'Test Workspace',
+            ownerId: owner.id,
+          },
+        });
+
+        const workspaceMember = await tx.workspaceMember.create({
+          data: {
+            workspaceId: workspace.id,
+            userId: member.id,
+            role: 'MEMBER',
+          },
+        });
+
+        return { owner, member, workspace, workspaceMember };
       });
 
-      const member = await prisma.user.create({
-        data: {
-          email: `member-${Date.now()}@example.com`,
-          passwordHash,
-        },
-      });
-
-      // Ensure owner exists before creating workspace
-      const ownerCheck = await prisma.user.findUnique({
-        where: { id: owner.id },
-      });
-      if (!ownerCheck) {
-        throw new Error('Owner user was not created properly');
-      }
-
-      const workspace = await prisma.workspace.create({
-        data: {
-          name: 'Test Workspace',
-          ownerId: owner.id,
-        },
-      });
-
-      const workspaceMember = await prisma.workspaceMember.create({
-        data: {
-          workspaceId: workspace.id,
-          userId: member.id,
-          role: 'MEMBER',
-        },
-      });
-
-      expect(workspaceMember).toBeDefined();
-      expect(workspaceMember.role).toBe('MEMBER');
+      expect(result.workspaceMember).toBeDefined();
+      expect(result.workspaceMember.role).toBe('MEMBER');
     });
   });
 

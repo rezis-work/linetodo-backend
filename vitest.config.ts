@@ -9,6 +9,11 @@ export default defineConfig({
     // Run tests sequentially to avoid database conflicts
     threads: false,
     maxConcurrency: 1,
+    // Ensure test files also run sequentially
+    fileParallelism: false,
+    sequence: {
+      shuffle: false,
+    },
     env: {
       // Use TEST_DATABASE_URL if provided, otherwise use DATABASE_URL from .env
       // If neither is set, tests will skip database operations
