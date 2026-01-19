@@ -133,7 +133,18 @@ export async function refresh(input: {
   const tokenHash = hashRefreshToken(input.refreshToken);
 
   // Find refresh token
-  const refreshTokenRecord = await findRefreshToken(tokenHash);
+  let refreshTokenRecord;
+  try {
+    refreshTokenRecord = await findRefreshToken(tokenHash);
+  } catch (error) {
+    // Handle database errors by treating as invalid token
+    const dbError = new Error('Invalid or expired refresh token') as Error & {
+      statusCode: number;
+    };
+    dbError.statusCode = 401;
+    throw dbError;
+  }
+
   if (!refreshTokenRecord) {
     const error = new Error('Invalid or expired refresh token') as Error & {
       statusCode: number;
@@ -143,9 +154,19 @@ export async function refresh(input: {
   }
 
   // Get user
-  const user = await prisma.user.findUnique({
-    where: { id: refreshTokenRecord.userId },
-  });
+  let user;
+  try {
+    user = await prisma.user.findUnique({
+      where: { id: refreshTokenRecord.userId },
+    });
+  } catch (error) {
+    // Handle database errors
+    const dbError = new Error('Invalid or expired refresh token') as Error & {
+      statusCode: number;
+    };
+    dbError.statusCode = 401;
+    throw dbError;
+  }
 
   if (!user) {
     const error = new Error('User not found') as Error & {

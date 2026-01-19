@@ -219,6 +219,10 @@ describe('Database Tests', () => {
         },
       });
 
+      // Verify workspace was created
+      expect(workspace).toBeDefined();
+      expect(workspace.id).toBeDefined();
+
       const todo = await prisma.todo.create({
         data: {
           workspaceId: workspace.id,

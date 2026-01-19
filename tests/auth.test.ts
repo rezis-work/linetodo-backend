@@ -199,13 +199,9 @@ describe('Auth API', () => {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 30);
 
-      await prisma.refreshToken.create({
-        data: {
-          userId: user.id,
-          tokenHash,
-          expiresAt,
-        },
-      });
+      // Use the service function to create refresh token to ensure consistency
+      const { createRefreshToken } = await import('../src/modules/auth/refreshToken.service.js');
+      await createRefreshToken(user.id, refreshToken);
 
       const response = await request(app)
         .post('/auth/refresh')
@@ -264,14 +260,10 @@ describe('Auth API', () => {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 30);
 
-      await prisma.refreshToken.create({
-        data: {
-          userId: user.id,
-          tokenHash,
-          expiresAt,
-          revokedAt: new Date(),
-        },
-      });
+      // Create token first, then revoke it
+      const { createRefreshToken, revokeRefreshToken } = await import('../src/modules/auth/refreshToken.service.js');
+      await createRefreshToken(user.id, refreshToken);
+      await revokeRefreshToken(tokenHash);
 
       const response = await request(app)
         .post('/auth/refresh')

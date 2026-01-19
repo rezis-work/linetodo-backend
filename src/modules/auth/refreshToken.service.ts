@@ -56,31 +56,39 @@ export async function createRefreshToken(
 export async function findRefreshToken(
   tokenHash: string
 ): Promise<{ id: string; userId: string; expiresAt: Date; revokedAt: Date | null } | null> {
-  let token;
   try {
-    token = await prisma.refreshToken.findUnique({
+    const token = await prisma.refreshToken.findUnique({
       where: { tokenHash },
     });
-  } catch {
-    // Handle database connection errors by returning null
-    return null;
-  }
 
-  if (!token) {
-    return null;
-  }
+    if (!token) {
+      return null;
+    }
 
-  // Check if token is expired
-  if (token.expiresAt < new Date()) {
-    return null;
-  }
+    // Check if token is expired
+    if (token.expiresAt < new Date()) {
+      return null;
+    }
 
-  // Check if token is revoked
-  if (token.revokedAt) {
-    return null;
-  }
+    // Check if token is revoked
+    if (token.revokedAt) {
+      return null;
+    }
 
-  return token;
+    return token;
+  } catch (error) {
+    // Only catch database connection errors, let other errors propagate
+    // Check if it's a connection/query error vs a constraint error
+    if (error && typeof error === 'object' && 'code' in error) {
+      const dbError = error as { code?: string };
+      // PostgreSQL connection errors
+      if (dbError.code === 'ECONNREFUSED' || dbError.code === 'ETIMEDOUT' || dbError.code === 'ENOTFOUND') {
+        return null;
+      }
+    }
+    // Re-throw other errors (like constraint violations) to be handled by caller
+    throw error;
+  }
 }
 
 /**
