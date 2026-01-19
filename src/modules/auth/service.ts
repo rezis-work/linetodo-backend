@@ -109,7 +109,20 @@ export async function login(input: LoginInput): Promise<AuthResponse> {
   const refreshToken = generateRefreshToken();
 
   // Create refresh token
-  await createRefreshToken(user.id, refreshToken);
+  try {
+    await createRefreshToken(user.id, refreshToken);
+  } catch (error) {
+    // Handle errors from createRefreshToken
+    if (error && typeof error === 'object' && 'statusCode' in error) {
+      throw error;
+    }
+    // Convert unexpected errors to 500
+    const unexpectedError = new Error('Failed to create refresh token') as Error & {
+      statusCode: number;
+    };
+    unexpectedError.statusCode = 500;
+    throw unexpectedError;
+  }
 
   return {
     user: {

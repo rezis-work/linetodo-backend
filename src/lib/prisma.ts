@@ -15,8 +15,11 @@ function getDatabaseUrl(): string {
 }
 
 // Create PostgreSQL connection pool
+// Use same connection settings as test Prisma instance for consistency
 const pool = new Pool({
   connectionString: getDatabaseUrl(),
+  // In test mode, use single connection like test helper
+  ...(env.NODE_ENV === 'test' && { max: 1 }),
 });
 
 // Create Prisma adapter

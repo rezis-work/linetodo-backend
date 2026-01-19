@@ -1,16 +1,10 @@
-import { beforeAll, afterAll, afterEach } from 'vitest';
-import { cleanupDatabase, disconnectDatabase, isDatabaseAvailable } from './helpers/db.js';
+import { beforeAll, afterAll } from 'vitest';
+import { disconnectDatabase } from './helpers/db.js';
 
 // Clean up database before all tests
 beforeAll(async () => {
   // Database is ready
-});
-
-// Clean up database after each test (only if database is available)
-afterEach(async () => {
-  if (await isDatabaseAvailable()) {
-    await cleanupDatabase();
-  }
+  // Note: Each test file handles its own cleanup in beforeEach/afterEach
 });
 
 // Disconnect after all tests

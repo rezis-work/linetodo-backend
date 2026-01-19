@@ -121,19 +121,26 @@ describe('Database Tests', () => {
 
       const passwordHash = await hashPassword('password123');
 
-      const user = await prisma.user.create({
-        data: {
-          email: 'owner@example.com',
-          passwordHash,
-        },
+      // Use transaction to ensure atomicity
+      const result = await prisma.$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            email: 'owner@example.com',
+            passwordHash,
+          },
+        });
+
+        const workspace = await tx.workspace.create({
+          data: {
+            name: 'Test Workspace',
+            ownerId: user.id,
+          },
+        });
+
+        return { user, workspace };
       });
 
-      const workspace = await prisma.workspace.create({
-        data: {
-          name: 'Test Workspace',
-          ownerId: user.id,
-        },
-      });
+      const { user, workspace } = result;
 
       await prisma.user.delete({
         where: { id: user.id },

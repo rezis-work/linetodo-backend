@@ -124,6 +124,10 @@ describe('Auth API', () => {
         },
       });
 
+      // Verify user exists before making API call
+      expect(user).toBeDefined();
+      expect(user.id).toBeDefined();
+
       const response = await request(app)
         .post('/auth/login')
         .send({

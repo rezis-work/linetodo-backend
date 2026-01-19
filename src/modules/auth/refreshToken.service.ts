@@ -39,15 +39,33 @@ export async function createRefreshToken(
   const expiresAt = getRefreshTokenExpiry();
 
   const client = tx || prisma;
-  const refreshToken = await client.refreshToken.create({
-    data: {
-      userId,
-      tokenHash,
-      expiresAt,
-    },
-  });
+  try {
+    const refreshToken = await client.refreshToken.create({
+      data: {
+        userId,
+        tokenHash,
+        expiresAt,
+      },
+    });
 
-  return refreshToken;
+    return refreshToken;
+  } catch (error) {
+    // Handle foreign key constraint violations (user doesn't exist)
+    if (
+      error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      (error as { code?: string }).code === 'P2003'
+    ) {
+      const fkError = new Error('User not found') as Error & {
+        statusCode: number;
+      };
+      fkError.statusCode = 404;
+      throw fkError;
+    }
+    // Re-throw other errors
+    throw error;
+  }
 }
 
 /**
