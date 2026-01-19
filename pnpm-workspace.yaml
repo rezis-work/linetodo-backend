@@ -4,3 +4,6 @@ ignoredBuiltDependencies:
 
 onlyBuiltDependencies:
   - '@prisma/engines'
+
+packages:
+  - "."
