@@ -6,9 +6,9 @@ import { Request, Response, NextFunction } from 'express';
  * Will be implemented in later milestones
  */
 export function authMiddleware(
-  req: Request,
+  _req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void {
   // TODO: Implement authentication logic
   res.status(401).json({

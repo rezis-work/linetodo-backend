@@ -5,6 +5,11 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['tests/**/*.test.ts'],
+    env: {
+      DATABASE_URL: 'postgresql://test:test@localhost:5432/test',
+      NODE_ENV: 'test',
+      PORT: '3000',
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

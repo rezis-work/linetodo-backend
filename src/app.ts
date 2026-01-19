@@ -1,6 +1,5 @@
 import express, { Express } from 'express';
 import { execSync } from 'child_process';
-import { logger } from './lib/logger.js';
 import { requestIdMiddleware } from './middleware/request-id.js';
 import { rateLimitMiddleware } from './middleware/rate-limit.js';
 import { errorMiddleware } from './middleware/error.js';
@@ -22,7 +21,7 @@ export function createApp(): Express {
   app.use(rateLimitMiddleware);
 
   // Health check endpoint
-  app.get('/health', (req, res) => {
+  app.get('/health', (_req, res) => {
     const commit = getCommitHash();
     res.json({
       status: 'ok',
