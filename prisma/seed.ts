@@ -1,26 +1,12 @@
 import 'dotenv/config';
-import bcrypt from 'bcryptjs';
-import { PrismaClient } from '../src/generated/prisma/client.js';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { Pool } from 'pg';
-import { env } from '../src/config/env.js';
-
-// Create PostgreSQL connection pool
-const pool = new Pool({
-  connectionString: env.DATABASE_URL,
-});
-
-// Create Prisma adapter
-const adapter = new PrismaPg(pool);
-
-// Initialize PrismaClient with adapter
-const prisma = new PrismaClient({ adapter });
+import { prisma } from '../src/lib/prisma.js';
+import { hashPassword } from '../src/lib/password.js';
 
 async function main() {
   console.log('Starting seed...');
 
   // Hash password for test user
-  const passwordHash = await bcrypt.hash('testpassword123', 10);
+  const passwordHash = await hashPassword('testpassword123');
 
   // Create user and workspace in a transaction
   const result = await prisma.$transaction(async (tx) => {
@@ -71,5 +57,4 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
-    await pool.end();
   });

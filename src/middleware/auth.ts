@@ -1,21 +1,39 @@
 import { Request, Response, NextFunction } from 'express';
+import { verifyAccessToken } from '../lib/jwt.js';
+import { AppError } from './error.js';
 
 /**
- * Placeholder authentication middleware
- * Returns 401 Unauthorized for now
- * Will be implemented in later milestones
+ * Authentication middleware
+ * Verifies JWT token from Authorization header
  */
 export function authMiddleware(
-  _req: Request,
+  req: Request,
   res: Response,
-  _next: NextFunction
+  next: NextFunction
 ): void {
-  // TODO: Implement authentication logic
-  res.status(401).json({
-    error: {
-      message: 'Unauthorized',
-      statusCode: 401,
-    },
-  });
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const error = new Error('Missing or invalid authorization header') as AppError;
+    error.statusCode = 401;
+    return next(error);
+  }
+
+  const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+  const payload = verifyAccessToken(token);
+
+  if (!payload) {
+    const error = new Error('Invalid or expired token') as AppError;
+    error.statusCode = 401;
+    return next(error);
+  }
+
+  // Attach user to request
+  req.user = {
+    id: payload.userId,
+    email: payload.email,
+  };
+
+  next();
 }
 

@@ -27,10 +27,13 @@ export function errorMiddleware(
     'Request error'
   );
 
+  const requestId = req.headers['x-request-id'];
+
   res.status(statusCode).json({
     error: {
       message,
       statusCode,
+      requestId: requestId || undefined,
       ...(env.NODE_ENV === 'development' && { stack: err.stack }),
     },
   });

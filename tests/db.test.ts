@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
-import bcrypt from 'bcryptjs';
+import { hashPassword } from '../src/lib/password.js';
 import { getTestPrismaClient, isDatabaseAvailable } from './helpers/db.js';
 
 describe('Database Tests', () => {
@@ -43,7 +43,7 @@ describe('Database Tests', () => {
         return; // Skip if database not available
       }
 
-      const passwordHash = await bcrypt.hash('password123', 10);
+      const passwordHash = await hashPassword('password123');
 
       const user = await prisma.user.create({
         data: {
@@ -66,7 +66,7 @@ describe('Database Tests', () => {
         return; // Skip if database not available
       }
 
-      const passwordHash = await bcrypt.hash('password123', 10);
+      const passwordHash = await hashPassword('password123');
 
       await prisma!.user.create({
         data: {
@@ -92,7 +92,7 @@ describe('Database Tests', () => {
         return; // Skip if database not available
       }
 
-      const passwordHash = await bcrypt.hash('password123', 10);
+      const passwordHash = await hashPassword('password123');
 
       const user = await prisma.user.create({
         data: {
@@ -119,7 +119,7 @@ describe('Database Tests', () => {
         return; // Skip if database not available
       }
 
-      const passwordHash = await bcrypt.hash('password123', 10);
+      const passwordHash = await hashPassword('password123');
 
       const user = await prisma.user.create({
         data: {
@@ -153,7 +153,7 @@ describe('Database Tests', () => {
         return; // Skip if database not available
       }
 
-      const passwordHash = await bcrypt.hash('password123', 10);
+      const passwordHash = await hashPassword('password123');
 
       const owner = await prisma.user.create({
         data: {
@@ -195,7 +195,7 @@ describe('Database Tests', () => {
         return; // Skip if database not available
       }
 
-      const passwordHash = await bcrypt.hash('password123', 10);
+      const passwordHash = await hashPassword('password123');
 
       const user = await prisma.user.create({
         data: {

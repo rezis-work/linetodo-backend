@@ -3,6 +3,7 @@ import { execSync } from 'child_process';
 import { requestIdMiddleware } from './middleware/request-id.js';
 import { rateLimitMiddleware } from './middleware/rate-limit.js';
 import { errorMiddleware } from './middleware/error.js';
+import authRoutes from './modules/auth/routes.js';
 
 function getCommitHash(): string | null {
   try {
@@ -28,6 +29,9 @@ export function createApp(): Express {
       commit,
     });
   });
+
+  // Auth routes
+  app.use('/auth', authRoutes);
 
   // Error handling middleware (must be last)
   app.use(errorMiddleware);
