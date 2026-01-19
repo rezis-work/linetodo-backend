@@ -1,4 +1,4 @@
-import jwt, { type JwtPayload } from 'jsonwebtoken';
+import jwt, { type JwtPayload, type Secret, type SignOptions } from 'jsonwebtoken';
 import { env } from '../config/env.js';
 import crypto from 'crypto';
 
@@ -7,7 +7,7 @@ export interface TokenPayload {
   email: string;
 }
 
-function getJwtSecret(): string {
+function getJwtSecret(): Secret {
   if (!env.JWT_SECRET) {
     throw new Error('JWT_SECRET is not set');
   }
@@ -19,9 +19,10 @@ function getJwtSecret(): string {
  */
 export function generateAccessToken(userId: string, email: string): string {
   const payload: TokenPayload = { userId, email };
-  return jwt.sign(payload, getJwtSecret(), {
-    expiresIn: env.JWT_ACCESS_TOKEN_EXPIRY,
-  });
+  const options: SignOptions = {
+    expiresIn: env.JWT_ACCESS_TOKEN_EXPIRY as SignOptions['expiresIn'],
+  };
+  return jwt.sign(payload, getJwtSecret(), options);
 }
 
 /**
