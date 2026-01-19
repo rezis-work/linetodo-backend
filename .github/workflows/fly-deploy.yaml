@@ -5,11 +5,38 @@ on:
     branches: [ "main" ]
     paths:
       - "backend/**"
-      - ".github/workflows/fly-deploy.yml"
+      - "backend/.github/workflows/fly-deploy.yaml"
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - "backend/**"
+      - "backend/.github/workflows/fly-deploy.yaml"
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run tests
+        run: pnpm test
+
   deploy:
     runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push'
     defaults:
       run:
         working-directory: backend
