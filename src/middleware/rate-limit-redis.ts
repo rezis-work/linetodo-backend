@@ -58,11 +58,13 @@ export const authRateLimitMiddleware = async (
     } catch (error) {
       // Fallback to in-memory if Redis fails
       console.warn('Redis rate limiting failed, falling back to in-memory:', error);
-      return inMemoryRateLimit(req, res, next);
+      inMemoryRateLimit(req, res, next);
+      return;
     }
   } else {
     // Fallback to in-memory rate limiting
-    return inMemoryRateLimit(req, res, next);
+    inMemoryRateLimit(req, res, next);
+    return;
   }
 };
 

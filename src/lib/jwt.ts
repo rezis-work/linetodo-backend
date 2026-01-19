@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt, { type JwtPayload } from 'jsonwebtoken';
 import { env } from '../config/env.js';
 import crypto from 'crypto';
 
@@ -7,12 +7,19 @@ export interface TokenPayload {
   email: string;
 }
 
+function getJwtSecret(): string {
+  if (!env.JWT_SECRET) {
+    throw new Error('JWT_SECRET is not set');
+  }
+  return env.JWT_SECRET;
+}
+
 /**
  * Generate a JWT access token
  */
 export function generateAccessToken(userId: string, email: string): string {
   const payload: TokenPayload = { userId, email };
-  return jwt.sign(payload, env.JWT_SECRET, {
+  return jwt.sign(payload, getJwtSecret(), {
     expiresIn: env.JWT_ACCESS_TOKEN_EXPIRY,
   });
 }
@@ -22,8 +29,15 @@ export function generateAccessToken(userId: string, email: string): string {
  */
 export function verifyAccessToken(token: string): TokenPayload | null {
   try {
-    const decoded = jwt.verify(token, env.JWT_SECRET) as TokenPayload;
-    return decoded;
+    const decoded = jwt.verify(token, getJwtSecret());
+    if (!decoded || typeof decoded === 'string') {
+      return null;
+    }
+    const payload = decoded as JwtPayload & Partial<TokenPayload>;
+    if (typeof payload.userId !== 'string' || typeof payload.email !== 'string') {
+      return null;
+    }
+    return { userId: payload.userId, email: payload.email };
   } catch {
     return null;
   }

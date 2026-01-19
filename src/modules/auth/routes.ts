@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Router as ExpressRouter } from 'express';
 import {
   registerHandler,
   loginHandler,
@@ -16,7 +16,7 @@ import {
   logoutSchema,
 } from './schemas.js';
 
-const router = Router();
+const router: ExpressRouter = Router();
 
 // Public routes with rate limiting
 router.post(
