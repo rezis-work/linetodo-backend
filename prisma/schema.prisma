@@ -10,11 +10,176 @@ datasource db {
   provider = "postgresql"
 }
 
-// Placeholder model - will be expanded in later milestones
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// Enums
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
 }
 
+enum TodoStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum TodoPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum EmbeddingSourceType {
+  TODO
+  COMMENT
+  CALENDAR_EVENT
+  WORKSPACE
+}
+
+// Models
+model User {
+  id            String          @id @default(cuid())
+  email         String          @unique
+  passwordHash  String
+  name          String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  // Relations
+  ownedWorkspaces    Workspace[]         @relation("WorkspaceOwner")
+  workspaceMembers   WorkspaceMember[]
+  createdTodos       Todo[]              @relation("TodoCreator")
+  assignedTodos      Todo[]              @relation("TodoAssignee")
+  comments           TodoComment[]
+  refreshTokens       RefreshToken[]
+  embeddingItems     EmbeddingItem[]
+}
+
+model Workspace {
+  id            String          @id @default(cuid())
+  name          String
+  ownerId       String
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  // Relations
+  owner           User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members         WorkspaceMember[]
+  todos           Todo[]
+  calendarEvents  CalendarEvent[]
+  embeddingItems  EmbeddingItem[]
+
+  @@index([ownerId])
+}
+
+model WorkspaceMember {
+  workspaceId  String        @db.VarChar(255)
+  userId      String        @db.VarChar(255)
+  role        WorkspaceRole
+  createdAt   DateTime      @default(now())
+
+  // Relations
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([workspaceId, userId])
+  @@index([workspaceId])
+  @@index([userId])
+}
+
+model Todo {
+  id            String        @id @default(cuid())
+  workspaceId   String
+  title         String
+  description   String?
+  status        TodoStatus   @default(TODO)
+  priority      TodoPriority @default(MEDIUM)
+  dueAt         DateTime?
+  createdById   String
+  assignedToId  String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  workspace     Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  creator       User          @relation("TodoCreator", fields: [createdById], references: [id])
+  assignee      User?         @relation("TodoAssignee", fields: [assignedToId], references: [id])
+  comments      TodoComment[]
+  calendarEvents CalendarEvent[]
+
+  @@index([workspaceId])
+  @@index([createdById])
+  @@index([assignedToId])
+  @@index([status])
+}
+
+model TodoComment {
+  id        String   @id @default(cuid())
+  todoId    String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  todo      Todo      @relation(fields: [todoId], references: [id], onDelete: Cascade)
+  author    User      @relation(fields: [authorId], references: [id])
+
+  @@index([todoId])
+  @@index([authorId])
+}
+
+model CalendarEvent {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  title         String
+  startAt       DateTime
+  endAt         DateTime
+  relatedTodoId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  relatedTodo   Todo?     @relation(fields: [relatedTodoId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
+  @@index([relatedTodoId])
+  @@index([startAt])
+}
+
+model RefreshToken {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  // Relations
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+model EmbeddingItem {
+  id             String              @id @default(cuid())
+  workspaceId    String?
+  userId         String?
+  sourceType     EmbeddingSourceType
+  sourceId       String
+  upstashVectorId String
+  updatedAt      DateTime           @default(now())
+
+  // Relations
+  workspace      Workspace?          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user           User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([userId])
+  @@index([sourceType, sourceId])
+  @@index([upstashVectorId])
+}

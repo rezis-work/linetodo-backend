@@ -5,8 +5,12 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['tests/**/*.test.ts'],
+    setupFiles: ['./tests/setup.ts'],
     env: {
-      DATABASE_URL: 'postgresql://test:test@localhost:5432/test',
+      // Use TEST_DATABASE_URL if provided, otherwise use DATABASE_URL from .env
+      // If neither is set, tests will skip database operations
+      DATABASE_URL:
+        process.env.TEST_DATABASE_URL || process.env.DATABASE_URL || '',
       NODE_ENV: 'test',
       PORT: '3000',
     },
