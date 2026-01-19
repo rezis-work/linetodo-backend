@@ -49,8 +49,8 @@ export async function register(
     const accessToken = generateAccessToken(user.id, user.email);
     const refreshToken = generateRefreshToken();
 
-    // Create refresh token
-    await createRefreshToken(user.id, refreshToken);
+    // Create refresh token using transaction client
+    await createRefreshToken(user.id, refreshToken, tx);
 
     return {
       user: {

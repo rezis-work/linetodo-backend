@@ -1,6 +1,7 @@
 import { prisma } from '../../lib/prisma.js';
 import { hashRefreshToken } from '../../lib/jwt.js';
 import { env } from '../../config/env.js';
+import type { Prisma } from '../../generated/prisma/client.js';
 
 /**
  * Calculate refresh token expiry date
@@ -25,15 +26,20 @@ function getRefreshTokenExpiry(): Date {
 
 /**
  * Create a new refresh token
+ * @param userId - User ID
+ * @param token - Refresh token string
+ * @param tx - Optional transaction client (for use within transactions)
  */
 export async function createRefreshToken(
   userId: string,
-  token: string
+  token: string,
+  tx?: Prisma.TransactionClient
 ): Promise<{ id: string; tokenHash: string; expiresAt: Date }> {
   const tokenHash = hashRefreshToken(token);
   const expiresAt = getRefreshTokenExpiry();
 
-  const refreshToken = await prisma.refreshToken.create({
+  const client = tx || prisma;
+  const refreshToken = await client.refreshToken.create({
     data: {
       userId,
       tokenHash,
@@ -81,8 +87,12 @@ export async function findRefreshToken(
  * Revoke a refresh token
  */
 export async function revokeRefreshToken(tokenHash: string): Promise<void> {
-  await prisma.refreshToken.update({
-    where: { tokenHash },
+  // Use updateMany to avoid error if token doesn't exist
+  await prisma.refreshToken.updateMany({
+    where: { 
+      tokenHash,
+      revokedAt: null, // Only revoke if not already revoked
+    },
     data: { revokedAt: new Date() },
   });
 }

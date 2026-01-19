@@ -157,17 +157,25 @@ describe('Database Tests', () => {
 
       const owner = await prisma.user.create({
         data: {
-          email: 'owner@example.com',
+          email: `owner-member-${Date.now()}@example.com`,
           passwordHash,
         },
       });
 
       const member = await prisma.user.create({
         data: {
-          email: 'member@example.com',
+          email: `member-${Date.now()}@example.com`,
           passwordHash,
         },
       });
+
+      // Ensure owner exists before creating workspace
+      const ownerCheck = await prisma.user.findUnique({
+        where: { id: owner.id },
+      });
+      if (!ownerCheck) {
+        throw new Error('Owner user was not created properly');
+      }
 
       const workspace = await prisma.workspace.create({
         data: {
