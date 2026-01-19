@@ -1,7 +1,7 @@
 import { prisma } from '../../lib/prisma.js';
 import { hashRefreshToken } from '../../lib/jwt.js';
 import { env } from '../../config/env.js';
-import type { Prisma } from '../../generated/prisma/client.js';
+import type { Prisma } from '@prisma/client';
 
 /**
  * Calculate refresh token expiry date
