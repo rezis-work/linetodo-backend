@@ -1,4 +1,4 @@
-import type { User } from '@prisma/client';
+import type { User, WorkspaceRole } from '@prisma/client';
 
 declare global {
   namespace Express {
@@ -6,6 +6,11 @@ declare global {
       user?: {
         id: string;
         email: string;
+      };
+      workspaceMember?: {
+        workspaceId: string;
+        userId: string;
+        role: WorkspaceRole;
       };
     }
   }
