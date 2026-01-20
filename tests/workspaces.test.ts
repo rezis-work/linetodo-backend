@@ -113,7 +113,7 @@ describe('Workspaces API', () => {
       expect(response.status).toBe(400);
       expect(response.body.error).toBeDefined();
       expect(response.body.error.message).toContain('Workspace name is required');
-      expect(response.body.requestId).toBeDefined();
+      expect(response.body.error.requestId).toBeDefined();
     });
 
     it('should validate input (name too long)', async () => {
@@ -137,7 +137,7 @@ describe('Workspaces API', () => {
       expect(response.status).toBe(400);
       expect(response.body.error).toBeDefined();
       expect(response.body.error.message).toContain('Workspace name must be 100 characters or less');
-      expect(response.body.requestId).toBeDefined();
+      expect(response.body.error.requestId).toBeDefined();
     });
   });
 
@@ -293,7 +293,7 @@ describe('Workspaces API', () => {
         password: 'password123',
       });
 
-      const { user: user2, accessToken: token2 } = await authService.register({
+      const { user: user2, accessToken: token2 } = await authRegister({
         email: 'member2@example.com',
         password: 'password123',
       });
@@ -321,7 +321,7 @@ describe('Workspaces API', () => {
       expect(response.status).toBe(403);
       expect(response.body.error).toBeDefined();
       expect(response.body.error.message).toContain('not a member');
-      expect(response.body.requestId).toBeDefined();
+      expect(response.body.error.requestId).toBeDefined();
     });
 
     it('should reject if workspace not found', async () => {
@@ -342,7 +342,7 @@ describe('Workspaces API', () => {
 
       expect(response.status).toBe(403);
       expect(response.body.error).toBeDefined();
-      expect(response.body.requestId).toBeDefined();
+      expect(response.body.error.requestId).toBeDefined();
     });
   });
 
@@ -409,7 +409,7 @@ describe('Workspaces API', () => {
         return;
       }
 
-      const { user: owner } = await authService.register({
+      const { user: owner } = await authRegister({
         email: 'adminowner@example.com',
         password: 'password123',
       });
@@ -456,7 +456,7 @@ describe('Workspaces API', () => {
         return;
       }
 
-      const { user: owner } = await authService.register({
+      const { user: owner } = await authRegister({
         email: 'owner2@example.com',
         password: 'password123',
       });
@@ -491,7 +491,7 @@ describe('Workspaces API', () => {
       expect(response.status).toBe(403);
       expect(response.body.error).toBeDefined();
       expect(response.body.error.message).toContain('Insufficient permissions');
-      expect(response.body.requestId).toBeDefined();
+      expect(response.body.error.requestId).toBeDefined();
     });
 
     it('should reject if user not found', async () => {
@@ -530,7 +530,7 @@ describe('Workspaces API', () => {
       expect(response.status).toBe(404);
       expect(response.body.error).toBeDefined();
       expect(response.body.error.message).toContain('User not found');
-      expect(response.body.requestId).toBeDefined();
+      expect(response.body.error.requestId).toBeDefined();
     });
 
     it('should reject duplicate member', async () => {
@@ -573,7 +573,7 @@ describe('Workspaces API', () => {
       expect(response.status).toBe(409);
       expect(response.body.error).toBeDefined();
       expect(response.body.error.message).toContain('already a member');
-      expect(response.body.requestId).toBeDefined();
+      expect(response.body.error.requestId).toBeDefined();
     });
   });
 
@@ -636,7 +636,7 @@ describe('Workspaces API', () => {
         return;
       }
 
-      const { user: owner } = await authService.register({
+      const { user: owner } = await authRegister({
         email: 'owner5@example.com',
         password: 'password123',
       });
@@ -670,7 +670,7 @@ describe('Workspaces API', () => {
       expect(response.status).toBe(403);
       expect(response.body.error).toBeDefined();
       expect(response.body.error.message).toContain('Insufficient permissions');
-      expect(response.body.requestId).toBeDefined();
+      expect(response.body.error.requestId).toBeDefined();
     });
 
     it('should reject changing OWNER role', async () => {
@@ -708,7 +708,7 @@ describe('Workspaces API', () => {
       expect(response.status).toBe(400);
       expect(response.body.error).toBeDefined();
       expect(response.body.error.message).toContain('Cannot change OWNER role');
-      expect(response.body.requestId).toBeDefined();
+      expect(response.body.error.requestId).toBeDefined();
     });
 
     it('should reject downgrading last OWNER', async () => {
@@ -747,7 +747,7 @@ describe('Workspaces API', () => {
       expect(response.status).toBe(400);
       expect(response.body.error).toBeDefined();
       expect(response.body.error.message).toContain('OWNER');
-      expect(response.body.requestId).toBeDefined();
+      expect(response.body.error.requestId).toBeDefined();
     });
   });
 
@@ -806,7 +806,7 @@ describe('Workspaces API', () => {
         return;
       }
 
-      const { user: owner } = await authService.register({
+      const { user: owner } = await authRegister({
         email: 'owner7@example.com',
         password: 'password123',
       });
@@ -837,7 +837,7 @@ describe('Workspaces API', () => {
       expect(response.status).toBe(403);
       expect(response.body.error).toBeDefined();
       expect(response.body.error.message).toContain('Insufficient permissions');
-      expect(response.body.requestId).toBeDefined();
+      expect(response.body.error.requestId).toBeDefined();
     });
 
     it('should reject removing last OWNER', async () => {
@@ -878,7 +878,7 @@ describe('Workspaces API', () => {
       expect(response.status).toBe(400);
       expect(response.body.error).toBeDefined();
       expect(response.body.error.message).toContain('Cannot remove the last OWNER');
-      expect(response.body.requestId).toBeDefined();
+      expect(response.body.error.requestId).toBeDefined();
     });
 
     it('should reject removing self as OWNER', async () => {
@@ -913,7 +913,7 @@ describe('Workspaces API', () => {
       expect(response.status).toBe(400);
       expect(response.body.error).toBeDefined();
       expect(response.body.error.message).toContain('Cannot remove yourself as OWNER');
-      expect(response.body.requestId).toBeDefined();
+      expect(response.body.error.requestId).toBeDefined();
     });
   });
 
@@ -962,7 +962,7 @@ describe('Workspaces API', () => {
       expect(response.status).toBe(403);
       expect(response.body.error).toBeDefined();
       expect(response.body.error.message).toContain('not a member');
-      expect(response.body.requestId).toBeDefined();
+      expect(response.body.error.requestId).toBeDefined();
     });
   });
 });
