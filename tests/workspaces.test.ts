@@ -490,7 +490,7 @@ describe('Workspaces API', () => {
 
       expect(response.status).toBe(403);
       expect(response.body.error).toBeDefined();
-      expect(response.body.error.message).toContain('Insufficient permissions');
+      expect(response.body.error.message).toContain('Insufficient role');
       expect(response.body.error.requestId).toBeDefined();
     });
 
@@ -669,7 +669,7 @@ describe('Workspaces API', () => {
 
       expect(response.status).toBe(403);
       expect(response.body.error).toBeDefined();
-      expect(response.body.error.message).toContain('Insufficient permissions');
+      expect(response.body.error.message).toContain('Insufficient role');
       expect(response.body.error.requestId).toBeDefined();
     });
 
@@ -836,7 +836,7 @@ describe('Workspaces API', () => {
 
       expect(response.status).toBe(403);
       expect(response.body.error).toBeDefined();
-      expect(response.body.error.message).toContain('Insufficient permissions');
+      expect(response.body.error.message).toContain('Insufficient role');
       expect(response.body.error.requestId).toBeDefined();
     });
 
