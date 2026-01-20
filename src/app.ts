@@ -1,4 +1,5 @@
 import express, { Express } from 'express';
+import cors from 'cors';
 import { execSync } from 'child_process';
 import { requestIdMiddleware } from './middleware/request-id.js';
 import { rateLimitMiddleware } from './middleware/rate-limit.js';
@@ -16,6 +17,32 @@ function getCommitHash(): string | null {
 
 export function createApp(): Express {
   const app = express();
+
+  // CORS configuration
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'https://line-todo-front.vercel.app',
+  ];
+
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) {
+          return callback(null, true);
+        }
+
+        if (allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
+      credentials: true, // Allow cookies/auth headers
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
+    })
+  );
 
   // Middleware
   app.use(express.json());
