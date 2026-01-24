@@ -6,6 +6,9 @@ const envSchema = z.object({
   DATABASE_URL: isTest
     ? z.string().url().optional().or(z.literal(''))
     : z.string().url(),
+  TEST_DATABASE_URL: isTest
+    ? z.string().url().optional().or(z.literal(''))
+    : z.string().url().optional(),
   DATABASE_URL_DIRECT: z.string().url().optional(),
   PORT: z.coerce.number().int().positive().default(3000),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),

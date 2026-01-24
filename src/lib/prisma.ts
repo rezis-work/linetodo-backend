@@ -43,9 +43,12 @@ function normalizeDatabaseUrl(url: string): string {
  */
 function getDatabaseUrl(): string {
   let url: string;
-  // In test mode, prefer TEST_DATABASE_URL if available
-  if ((env.NODE_ENV === 'test' || env.NODE_ENV === 'development') && process.env.TEST_DATABASE_URL) {
+  // In test mode, always prefer TEST_DATABASE_URL if available
+  // Check process.env.NODE_ENV directly to ensure we catch test mode even if env was loaded before NODE_ENV was set
+  if (process.env.NODE_ENV === 'test' && process.env.TEST_DATABASE_URL) {
     url = process.env.TEST_DATABASE_URL;
+  } else if (env.NODE_ENV === 'test' && env.TEST_DATABASE_URL) {
+    url = env.TEST_DATABASE_URL;
   } else {
     url = env.DATABASE_URL || '';
   }

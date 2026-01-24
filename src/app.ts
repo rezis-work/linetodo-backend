@@ -6,6 +6,7 @@ import { rateLimitMiddleware } from './middleware/rate-limit.js';
 import { errorMiddleware } from './middleware/error.js';
 import authRoutes from './modules/auth/routes.js';
 import workspaceRoutes from './modules/workspaces/routes.js';
+import todoRoutes from './modules/todos/routes.js';
 
 function getCommitHash(): string | null {
   try {
@@ -64,6 +65,9 @@ export function createApp(): Express {
 
   // Workspace routes
   app.use('/workspaces', workspaceRoutes);
+
+  // Todo routes (nested under workspaces)
+  app.use('/workspaces/:id/todos', todoRoutes);
 
   // Error handling middleware (must be last)
   app.use(errorMiddleware);
