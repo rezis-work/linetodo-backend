@@ -965,5 +965,430 @@ describe('Workspaces API', () => {
       expect(response.body.error.requestId).toBeDefined();
     });
   });
+
+  describe('GET /workspaces/:id/members', () => {
+    it('should list workspace members successfully', async () => {
+      if (!prisma) {
+        return;
+      }
+
+      const { user: owner, accessToken: ownerToken } = await authRegister({
+        email: 'listowner@example.com',
+        password: 'password123',
+        name: 'Owner User',
+      });
+
+      const { user: member1 } = await authRegister({
+        email: 'member1@example.com',
+        password: 'password123',
+        name: 'Member One',
+      });
+
+      const { user: member2 } = await authRegister({
+        email: 'member2@example.com',
+        password: 'password123',
+        name: 'Member Two',
+      });
+
+      const workspace = await prisma.workspace.create({
+        data: {
+          name: 'List Members Workspace',
+          ownerId: owner.id,
+        },
+      });
+
+      await prisma.workspaceMember.createMany({
+        data: [
+          { workspaceId: workspace.id, userId: owner.id, role: 'OWNER' },
+          { workspaceId: workspace.id, userId: member1.id, role: 'ADMIN' },
+          { workspaceId: workspace.id, userId: member2.id, role: 'MEMBER' },
+        ],
+      });
+
+      const response = await request(app)
+        .get(`/workspaces/${workspace.id}/members`)
+        .set('Authorization', `Bearer ${ownerToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toHaveLength(3);
+      expect(response.body.data).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            userId: owner.id,
+            email: 'listowner@example.com',
+            name: 'Owner User',
+            role: 'OWNER',
+          }),
+          expect.objectContaining({
+            userId: member1.id,
+            email: 'member1@example.com',
+            name: 'Member One',
+            role: 'ADMIN',
+          }),
+          expect.objectContaining({
+            userId: member2.id,
+            email: 'member2@example.com',
+            name: 'Member Two',
+            role: 'MEMBER',
+          }),
+        ])
+      );
+      expect(response.body.requestId).toBeDefined();
+    });
+
+    it('should allow MEMBER role to list members', async () => {
+      if (!prisma) {
+        return;
+      }
+
+      const { user: owner } = await authRegister({
+        email: 'memberlistowner@example.com',
+        password: 'password123',
+      });
+
+      const { user: member, accessToken: memberToken } = await authRegister({
+        email: 'memberlistmember@example.com',
+        password: 'password123',
+      });
+
+      const workspace = await prisma.workspace.create({
+        data: {
+          name: 'Member List Workspace',
+          ownerId: owner.id,
+        },
+      });
+
+      await prisma.workspaceMember.createMany({
+        data: [
+          { workspaceId: workspace.id, userId: owner.id, role: 'OWNER' },
+          { workspaceId: workspace.id, userId: member.id, role: 'MEMBER' },
+        ],
+      });
+
+      const response = await request(app)
+        .get(`/workspaces/${workspace.id}/members`)
+        .set('Authorization', `Bearer ${memberToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toHaveLength(2);
+      expect(response.body.requestId).toBeDefined();
+    });
+
+    it('should reject unauthorized request', async () => {
+      if (!prisma) {
+        return;
+      }
+
+      const { user: owner } = await authRegister({
+        email: 'unauthlist@example.com',
+        password: 'password123',
+      });
+
+      const workspace = await prisma.workspace.create({
+        data: {
+          name: 'Unauth List Workspace',
+          ownerId: owner.id,
+        },
+      });
+
+      await prisma.workspaceMember.create({
+        data: {
+          workspaceId: workspace.id,
+          userId: owner.id,
+          role: 'OWNER',
+        },
+      });
+
+      const response = await request(app).get(`/workspaces/${workspace.id}/members`);
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error.message).toContain('Missing or invalid authorization header');
+      expect(response.body.error.requestId).toBeDefined();
+    });
+
+    it('should reject if user is not a member', async () => {
+      if (!prisma) {
+        return;
+      }
+
+      const { user: owner } = await authRegister({
+        email: 'nonmemberowner@example.com',
+        password: 'password123',
+      });
+
+      const { accessToken: nonMemberToken } = await authRegister({
+        email: 'nonmember@example.com',
+        password: 'password123',
+      });
+
+      const workspace = await prisma.workspace.create({
+        data: {
+          name: 'Non Member Workspace',
+          ownerId: owner.id,
+        },
+      });
+
+      await prisma.workspaceMember.create({
+        data: {
+          workspaceId: workspace.id,
+          userId: owner.id,
+          role: 'OWNER',
+        },
+      });
+
+      const response = await request(app)
+        .get(`/workspaces/${workspace.id}/members`)
+        .set('Authorization', `Bearer ${nonMemberToken}`);
+
+      expect(response.status).toBe(403);
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error.message).toContain('not a member');
+      expect(response.body.error.requestId).toBeDefined();
+    });
+  });
+
+  describe('PATCH /workspaces/:id', () => {
+    it('should update workspace name successfully', async () => {
+      if (!prisma) {
+        return;
+      }
+
+      const { user: owner, accessToken: ownerToken } = await authRegister({
+        email: 'updateowner@example.com',
+        password: 'password123',
+      });
+
+      const workspace = await prisma.workspace.create({
+        data: {
+          name: 'Original Name',
+          ownerId: owner.id,
+        },
+      });
+
+      await prisma.workspaceMember.create({
+        data: {
+          workspaceId: workspace.id,
+          userId: owner.id,
+          role: 'OWNER',
+        },
+      });
+
+      const response = await request(app)
+        .patch(`/workspaces/${workspace.id}`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({
+          name: 'Updated Name',
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.name).toBe('Updated Name');
+      expect(response.body.data.id).toBe(workspace.id);
+      expect(response.body.data.role).toBe('OWNER');
+      expect(response.body.requestId).toBeDefined();
+
+      // Verify workspace was updated in database
+      const updatedWorkspace = await prisma.workspace.findUnique({
+        where: { id: workspace.id },
+      });
+      expect(updatedWorkspace?.name).toBe('Updated Name');
+    });
+
+    it('should reject if user is not OWNER', async () => {
+      if (!prisma) {
+        return;
+      }
+
+      const { user: owner } = await authRegister({
+        email: 'updateowner2@example.com',
+        password: 'password123',
+      });
+
+      const { user: admin, accessToken: adminToken } = await authRegister({
+        email: 'updateadmin@example.com',
+        password: 'password123',
+      });
+
+      const workspace = await prisma.workspace.create({
+        data: {
+          name: 'Admin Update Workspace',
+          ownerId: owner.id,
+        },
+      });
+
+      await prisma.workspaceMember.createMany({
+        data: [
+          { workspaceId: workspace.id, userId: owner.id, role: 'OWNER' },
+          { workspaceId: workspace.id, userId: admin.id, role: 'ADMIN' },
+        ],
+      });
+
+      const response = await request(app)
+        .patch(`/workspaces/${workspace.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Unauthorized Update',
+        });
+
+      expect(response.status).toBe(403);
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error.message).toContain('Only workspace owners');
+      expect(response.body.error.requestId).toBeDefined();
+    });
+
+    it('should reject if user is MEMBER', async () => {
+      if (!prisma) {
+        return;
+      }
+
+      const { user: owner } = await authRegister({
+        email: 'updateowner3@example.com',
+        password: 'password123',
+      });
+
+      const { user: member, accessToken: memberToken } = await authRegister({
+        email: 'updatemember@example.com',
+        password: 'password123',
+      });
+
+      const workspace = await prisma.workspace.create({
+        data: {
+          name: 'Member Update Workspace',
+          ownerId: owner.id,
+        },
+      });
+
+      await prisma.workspaceMember.createMany({
+        data: [
+          { workspaceId: workspace.id, userId: owner.id, role: 'OWNER' },
+          { workspaceId: workspace.id, userId: member.id, role: 'MEMBER' },
+        ],
+      });
+
+      const response = await request(app)
+        .patch(`/workspaces/${workspace.id}`)
+        .set('Authorization', `Bearer ${memberToken}`)
+        .send({
+          name: 'Unauthorized Update',
+        });
+
+      expect(response.status).toBe(403);
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error.message).toContain('Insufficient role');
+      expect(response.body.error.requestId).toBeDefined();
+    });
+
+    it('should reject unauthorized request', async () => {
+      if (!prisma) {
+        return;
+      }
+
+      const { user: owner } = await authRegister({
+        email: 'unauthupdate@example.com',
+        password: 'password123',
+      });
+
+      const workspace = await prisma.workspace.create({
+        data: {
+          name: 'Unauth Update Workspace',
+          ownerId: owner.id,
+        },
+      });
+
+      await prisma.workspaceMember.create({
+        data: {
+          workspaceId: workspace.id,
+          userId: owner.id,
+          role: 'OWNER',
+        },
+      });
+
+      const response = await request(app).patch(`/workspaces/${workspace.id}`).send({
+        name: 'Unauthorized Update',
+      });
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error.message).toContain('Missing or invalid authorization header');
+      expect(response.body.error.requestId).toBeDefined();
+    });
+
+    it('should validate input (empty name)', async () => {
+      if (!prisma) {
+        return;
+      }
+
+      const { user: owner, accessToken: ownerToken } = await authRegister({
+        email: 'validateupdate@example.com',
+        password: 'password123',
+      });
+
+      const workspace = await prisma.workspace.create({
+        data: {
+          name: 'Validate Update Workspace',
+          ownerId: owner.id,
+        },
+      });
+
+      await prisma.workspaceMember.create({
+        data: {
+          workspaceId: workspace.id,
+          userId: owner.id,
+          role: 'OWNER',
+        },
+      });
+
+      const response = await request(app)
+        .patch(`/workspaces/${workspace.id}`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({
+          name: '',
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error.message).toContain('Workspace name is required');
+      expect(response.body.error.requestId).toBeDefined();
+    });
+
+    it('should validate input (name too long)', async () => {
+      if (!prisma) {
+        return;
+      }
+
+      const { user: owner, accessToken: ownerToken } = await authRegister({
+        email: 'validatelong@example.com',
+        password: 'password123',
+      });
+
+      const workspace = await prisma.workspace.create({
+        data: {
+          name: 'Validate Long Workspace',
+          ownerId: owner.id,
+        },
+      });
+
+      await prisma.workspaceMember.create({
+        data: {
+          workspaceId: workspace.id,
+          userId: owner.id,
+          role: 'OWNER',
+        },
+      });
+
+      const longName = 'a'.repeat(101);
+      const response = await request(app)
+        .patch(`/workspaces/${workspace.id}`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({
+          name: longName,
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error.message).toContain('Workspace name must be 100 characters or less');
+      expect(response.body.error.requestId).toBeDefined();
+    });
+  });
 });
 

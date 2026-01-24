@@ -13,6 +13,10 @@ export interface UpdateMemberRoleInput {
   role: WorkspaceRole;
 }
 
+export interface UpdateWorkspaceInput {
+  name: string;
+}
+
 export interface WorkspaceResponse {
   id: string;
   name: string;

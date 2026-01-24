@@ -6,6 +6,8 @@ import {
   inviteMemberHandler,
   updateMemberRoleHandler,
   removeMemberHandler,
+  listMembersHandler,
+  updateWorkspaceHandler,
 } from './controller.js';
 import { requireAuth, requireWorkspaceRole } from '../../middleware/rbac.js';
 import { validateBody } from '../../middleware/validation.js';
@@ -13,6 +15,7 @@ import {
   createWorkspaceSchema,
   inviteMemberSchema,
   updateMemberRoleSchema,
+  updateWorkspaceSchema,
   workspaceIdParamSchema,
   userIdParamSchema,
 } from './schemas.js';
@@ -70,6 +73,15 @@ router.post('/', requireAuth, validateBody(createWorkspaceSchema), createWorkspa
 // GET /workspaces - List user's workspaces
 router.get('/', requireAuth, listWorkspacesHandler);
 
+// GET /workspaces/:id/members - List members (requires MEMBER role)
+router.get(
+  '/:id/members',
+  requireAuth,
+  validateWorkspaceIdParam,
+  requireWorkspaceRoleFromParams('MEMBER'),
+  listMembersHandler
+);
+
 // GET /workspaces/:id - Get workspace details (requires MEMBER role)
 router.get(
   '/:id',
@@ -77,6 +89,16 @@ router.get(
   validateWorkspaceIdParam,
   requireWorkspaceRoleFromParams('MEMBER'),
   getWorkspaceHandler
+);
+
+// PATCH /workspaces/:id - Update workspace (requires OWNER role)
+router.patch(
+  '/:id',
+  requireAuth,
+  validateWorkspaceIdParam,
+  requireWorkspaceRoleFromParams('OWNER'),
+  validateBody(updateWorkspaceSchema),
+  updateWorkspaceHandler
 );
 
 // POST /workspaces/:id/members - Invite member (requires ADMIN role)

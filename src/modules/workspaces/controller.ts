@@ -6,6 +6,8 @@ import {
   inviteMember,
   updateMemberRole,
   removeMember,
+  getWorkspaceMembers,
+  updateWorkspace,
 } from './service.js';
 import { AppError } from '../../middleware/error.js';
 
@@ -164,6 +166,60 @@ export async function removeMemberHandler(
 
     res.json({
       message: 'Member removed successfully',
+      requestId: req.headers['x-request-id'],
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * List members handler
+ */
+export async function listMembersHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    if (!req.user) {
+      const error = new Error('Unauthorized') as AppError;
+      error.statusCode = 401;
+      throw error;
+    }
+
+    const workspaceId = typeof req.params.id === 'string' ? req.params.id : req.params.id[0];
+    const members = await getWorkspaceMembers(workspaceId, req.user.id);
+
+    res.json({
+      data: members,
+      requestId: req.headers['x-request-id'],
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Update workspace handler
+ */
+export async function updateWorkspaceHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    if (!req.user) {
+      const error = new Error('Unauthorized') as AppError;
+      error.statusCode = 401;
+      throw error;
+    }
+
+    const workspaceId = typeof req.params.id === 'string' ? req.params.id : req.params.id[0];
+    const result = await updateWorkspace(workspaceId, req.body, req.user.id);
+
+    res.json({
+      data: result,
       requestId: req.headers['x-request-id'],
     });
   } catch (error) {

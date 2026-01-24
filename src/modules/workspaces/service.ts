@@ -4,6 +4,7 @@ import type {
   CreateWorkspaceInput,
   InviteMemberInput,
   UpdateMemberRoleInput,
+  UpdateWorkspaceInput,
   WorkspaceResponse,
   WorkspaceMemberResponse,
 } from './types.js';
@@ -421,5 +422,105 @@ export async function removeMember(
       },
     },
   });
+}
+
+/**
+ * Get all members of a workspace
+ * Verifies user is a member of the workspace
+ */
+export async function getWorkspaceMembers(
+  workspaceId: string,
+  userId: string
+): Promise<WorkspaceMemberResponse[]> {
+  // Verify user is a member
+  const membership = await prisma.workspaceMember.findUnique({
+    where: {
+      workspaceId_userId: {
+        workspaceId,
+        userId,
+      },
+    },
+  });
+
+  if (!membership) {
+    const error = new Error('Workspace not found or you are not a member') as Error & {
+      statusCode: number;
+    };
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Get all members
+  const members = await prisma.workspaceMember.findMany({
+    where: { workspaceId },
+    include: { user: true },
+    orderBy: {
+      createdAt: 'asc',
+    },
+  });
+
+  return members.map((m) => ({
+    userId: m.userId,
+    email: m.user.email,
+    name: m.user.name,
+    role: m.role,
+    createdAt: m.createdAt,
+  }));
+}
+
+/**
+ * Update workspace
+ * Verifies user is OWNER of the workspace
+ */
+export async function updateWorkspace(
+  workspaceId: string,
+  input: UpdateWorkspaceInput,
+  userId: string
+): Promise<WorkspaceResponse> {
+  // Verify user is OWNER
+  const membership = await prisma.workspaceMember.findUnique({
+    where: {
+      workspaceId_userId: {
+        workspaceId,
+        userId,
+      },
+    },
+    include: {
+      workspace: true,
+    },
+  });
+
+  if (!membership) {
+    const error = new Error('Workspace not found or you are not a member') as Error & {
+      statusCode: number;
+    };
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (membership.role !== 'OWNER') {
+    const error = new Error('Only workspace owners can update workspace details') as Error & {
+      statusCode: number;
+    };
+    error.statusCode = 403;
+    throw error;
+  }
+
+  // Update workspace
+  const updatedWorkspace = await prisma.workspace.update({
+    where: { id: workspaceId },
+    data: {
+      name: input.name,
+    },
+  });
+
+  return {
+    id: updatedWorkspace.id,
+    name: updatedWorkspace.name,
+    ownerId: updatedWorkspace.ownerId,
+    createdAt: updatedWorkspace.createdAt,
+    updatedAt: updatedWorkspace.updatedAt,
+    role: 'OWNER',
+  };
 }
 
