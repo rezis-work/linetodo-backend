@@ -7,6 +7,7 @@ import { errorMiddleware } from './middleware/error.js';
 import authRoutes from './modules/auth/routes.js';
 import workspaceRoutes from './modules/workspaces/routes.js';
 import todoRoutes from './modules/todos/routes.js';
+import calendarRoutes from './modules/calendar/routes.js';
 
 function getCommitHash(): string | null {
   try {
@@ -68,6 +69,9 @@ export function createApp(): Express {
 
   // Todo routes (nested under workspaces)
   app.use('/workspaces/:id/todos', todoRoutes);
+
+  // Calendar routes (nested under workspaces)
+  app.use('/workspaces/:id/calendar', calendarRoutes);
 
   // Error handling middleware (must be last)
   app.use(errorMiddleware);
