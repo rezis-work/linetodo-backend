@@ -22,6 +22,7 @@ export function createApp(): Express {
   const allowedOrigins = [
     'http://localhost:3000',
     'https://line-todo-front.vercel.app',
+    'https://taskinio.space',
   ];
 
   app.use(
