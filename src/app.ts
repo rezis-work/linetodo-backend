@@ -5,6 +5,7 @@ import { requestIdMiddleware } from './middleware/request-id.js';
 import { rateLimitMiddleware } from './middleware/rate-limit.js';
 import { errorMiddleware } from './middleware/error.js';
 import authRoutes from './modules/auth/routes.js';
+import userRoutes from './modules/users/routes.js';
 import workspaceRoutes from './modules/workspaces/routes.js';
 import todoRoutes from './modules/todos/routes.js';
 import calendarRoutes from './modules/calendar/routes.js';
@@ -63,6 +64,9 @@ export function createApp(): Express {
 
   // Auth routes
   app.use('/auth', authRoutes);
+
+  // User routes
+  app.use('/users', userRoutes);
 
   // Workspace routes
   app.use('/workspaces', workspaceRoutes);

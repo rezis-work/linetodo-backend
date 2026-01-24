@@ -131,9 +131,15 @@ export async function revokeRefreshToken(
 
 /**
  * Revoke all refresh tokens for a user
+ * @param userId - User ID
+ * @param tx - Optional transaction client (for use within transactions)
  */
-export async function revokeAllUserTokens(userId: string): Promise<void> {
-  await prisma.refreshToken.updateMany({
+export async function revokeAllUserTokens(
+  userId: string,
+  tx?: Prisma.TransactionClient
+): Promise<void> {
+  const client = tx || prisma;
+  await client.refreshToken.updateMany({
     where: {
       userId,
       revokedAt: null,
