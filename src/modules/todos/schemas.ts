@@ -34,18 +34,6 @@ export const updateTodoSchema = z.object({
   assignedToId: z.string().cuid('Invalid user ID format').nullable().optional(),
 });
 
-// Helper to transform comma-separated string to array
-const commaSeparatedEnum = <T extends z.ZodEnum<any>>(enumSchema: T) =>
-  z.preprocess(
-    (val) => {
-      if (typeof val === 'string' && val.includes(',')) {
-        return val.split(',').map((v) => v.trim());
-      }
-      return val;
-    },
-    z.union([enumSchema, z.array(enumSchema)])
-  );
-
 export const todoFiltersSchema = z.object({
   status: z.nativeEnum(TodoStatus, {
     errorMap: () => ({ message: 'Invalid status' }),

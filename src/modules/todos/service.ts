@@ -567,8 +567,8 @@ export async function batchUpdateTodos(
     await verifyAssigneeIsMember(workspaceId, input.assignedToId);
   }
 
-  // Build update data
-  const updateData: Prisma.TodoUpdateInput = {};
+  // Build update data conditionally
+  const updateData: Prisma.TodoUpdateManyMutationInput = {};
   if (input.status !== undefined) {
     updateData.status = input.status;
   }
@@ -576,7 +576,9 @@ export async function batchUpdateTodos(
     updateData.priority = input.priority;
   }
   if (input.assignedToId !== undefined) {
-    updateData.assignedToId = input.assignedToId;
+    // assignedToId is a scalar field and works at runtime with updateMany
+    // TypeScript types don't include it, but we can safely assign it
+    (updateData as Record<string, unknown>).assignedToId = input.assignedToId;
   }
 
   // Update all matching todos
@@ -633,7 +635,6 @@ export async function getTodoStats(workspaceId: string, userId: string): Promise
   const todayEnd = new Date(todayStart);
   todayEnd.setDate(todayEnd.getDate() + 1);
 
-  const weekStart = new Date(todayStart);
   const weekEnd = new Date(todayStart);
   weekEnd.setDate(weekEnd.getDate() + 7);
 
