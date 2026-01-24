@@ -604,7 +604,7 @@ describe('Todos API', () => {
           {
             workspaceId: workspace.id,
             title: 'Regular Task',
-            description: 'Not important',
+            description: 'This is a regular task',
             createdById: user.id,
             status: 'TODO',
             priority: 'MEDIUM',
