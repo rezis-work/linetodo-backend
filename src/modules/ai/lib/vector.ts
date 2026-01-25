@@ -50,7 +50,7 @@ export async function searchSimilar(
   });
 
   return results.map((r) => ({
-    id: r.id,
+    id: String(r.id),
     score: r.score,
     metadata: r.metadata as VectorMetadata | undefined,
   }));

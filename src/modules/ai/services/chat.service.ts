@@ -24,13 +24,21 @@ async function getOrCreateSession(
   chatType: 'TASK' | 'GLOBAL',
   todoId?: string
 ): Promise<string> {
-  const existing = await prisma.chatSession.findUnique({
+  // For GLOBAL chats, todoId must be explicitly null
+  // For TASK chats, todoId must be provided
+  if (chatType === 'TASK' && !todoId) {
+    throw new Error('todoId is required for TASK chat sessions');
+  }
+  
+  const finalTodoId = chatType === 'GLOBAL' ? null : (todoId ?? null);
+  
+  // Use findFirst instead of findUnique for nullable composite keys
+  // Prisma's findUnique has issues with nullable fields in composite unique constraints
+  const existing = await prisma.chatSession.findFirst({
     where: {
-      userId_todoId_chatType: {
-        userId,
-        todoId: todoId || null,
-        chatType,
-      },
+      userId,
+      todoId: finalTodoId,
+      chatType: chatType as 'TASK' | 'GLOBAL',
     },
   });
 
@@ -41,8 +49,8 @@ async function getOrCreateSession(
   const session = await prisma.chatSession.create({
     data: {
       userId,
-      todoId: todoId || null,
-      chatType,
+      todoId: finalTodoId,
+      chatType: chatType as 'TASK' | 'GLOBAL',
     },
   });
 
@@ -188,13 +196,21 @@ export async function getChatHistory(
   todoId?: string,
   limit: number = 50
 ): Promise<ChatHistoryResponse | null> {
-  const session = await prisma.chatSession.findUnique({
+  // For GLOBAL chats, todoId must be explicitly null
+  // For TASK chats, todoId must be provided
+  if (chatType === 'TASK' && !todoId) {
+    throw new Error('todoId is required for TASK chat history');
+  }
+  
+  const finalTodoId = chatType === 'GLOBAL' ? null : (todoId ?? null);
+  
+  // Use findFirst instead of findUnique for nullable composite keys
+  // Prisma's findUnique has issues with nullable fields in composite unique constraints
+  const session = await prisma.chatSession.findFirst({
     where: {
-      userId_todoId_chatType: {
-        userId,
-        todoId: todoId || null,
-        chatType,
-      },
+      userId,
+      todoId: finalTodoId,
+      chatType: chatType as 'TASK' | 'GLOBAL',
     },
     include: {
       messages: {
@@ -208,11 +224,16 @@ export async function getChatHistory(
     return null;
   }
 
+  // Type assertion needed because Prisma's include type inference can be incomplete
+  const sessionWithMessages = session as typeof session & {
+    messages: Array<{ id: string; role: string; content: string; createdAt: Date }>;
+  };
+
   return {
-    sessionId: session.id,
-    chatType: session.chatType,
-    todoId: session.todoId,
-    messages: session.messages.map((m) => ({
+    sessionId: sessionWithMessages.id,
+    chatType: sessionWithMessages.chatType as 'TASK' | 'GLOBAL',
+    todoId: sessionWithMessages.todoId,
+    messages: sessionWithMessages.messages.map((m) => ({
       id: m.id,
       role: m.role as 'user' | 'assistant',
       content: m.content,
@@ -229,11 +250,19 @@ export async function clearChatHistory(
   chatType: 'TASK' | 'GLOBAL',
   todoId?: string
 ): Promise<void> {
+  // For GLOBAL chats, todoId must be explicitly null
+  // For TASK chats, todoId must be provided
+  if (chatType === 'TASK' && !todoId) {
+    throw new Error('todoId is required for TASK chat history');
+  }
+  
+  const finalTodoId = chatType === 'GLOBAL' ? null : (todoId ?? null);
+  
   await prisma.chatSession.deleteMany({
     where: {
       userId,
-      todoId: todoId || null,
-      chatType,
+      todoId: finalTodoId,
+      chatType: chatType as 'TASK' | 'GLOBAL',
     },
   });
 }

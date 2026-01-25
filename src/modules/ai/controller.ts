@@ -22,7 +22,7 @@ export async function sendTaskChatHandler(
       throw error;
     }
 
-    const todoId = req.params.todoId;
+    const todoId = Array.isArray(req.params.todoId) ? req.params.todoId[0] : req.params.todoId;
     const { message } = req.body;
 
     const result = await sendTaskMessage(req.user.id, todoId, message);
@@ -48,7 +48,7 @@ export async function getTaskChatHistoryHandler(
       throw error;
     }
 
-    const todoId = req.params.todoId;
+    const todoId = Array.isArray(req.params.todoId) ? req.params.todoId[0] : req.params.todoId;
     const limit = Number(req.query.limit) || 50;
 
     const result = await getChatHistory(req.user.id, 'TASK', todoId, limit);
@@ -74,7 +74,7 @@ export async function clearTaskChatHandler(
       throw error;
     }
 
-    const todoId = req.params.todoId;
+    const todoId = Array.isArray(req.params.todoId) ? req.params.todoId[0] : req.params.todoId;
     await clearChatHistory(req.user.id, 'TASK', todoId);
 
     res.json({
@@ -171,7 +171,7 @@ export async function streamTaskChatHandler(
     return;
   }
 
-  const todoId = req.params.todoId;
+  const todoId = Array.isArray(req.params.todoId) ? req.params.todoId[0] : req.params.todoId;
   const { message } = req.body;
 
   // Initialize SSE connection
