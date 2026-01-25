@@ -18,6 +18,7 @@ vi.mock('../src/modules/ai/lib/openai.js', () => ({
 describe('AI Chat Streaming API', () => {
   const app = createApp();
   let prisma: ReturnType<typeof getTestPrismaClient> | null = null;
+  let testCounter = 0;
 
   beforeAll(async () => {
     if (await isDatabaseAvailable()) {
@@ -30,22 +31,32 @@ describe('AI Chat Streaming API', () => {
       return;
     }
 
-    // Clean up before each test
-    try {
-      await prisma.chatMessage.deleteMany();
-      await prisma.chatSession.deleteMany();
-      await prisma.refreshToken.deleteMany();
-      await prisma.todoComment.deleteMany();
-      await prisma.calendarEvent.deleteMany();
-      await prisma.todo.deleteMany();
-      await prisma.workspaceMember.deleteMany();
-      await prisma.workspace.deleteMany();
-      await prisma.embeddingItem.deleteMany();
-      await prisma.user.deleteMany();
-    } catch (error) {
-      console.warn('Cleanup error:', error);
-    }
+    // Clean up before each test - handle missing tables gracefully
+    const cleanupOperations = [
+      () => prisma.chatMessage.deleteMany().catch(() => {}),
+      () => prisma.chatSession.deleteMany().catch(() => {}),
+      () => prisma.refreshToken.deleteMany().catch(() => {}),
+      () => prisma.todoComment.deleteMany().catch(() => {}),
+      () => prisma.calendarEvent.deleteMany().catch(() => {}),
+      () => prisma.todo.deleteMany().catch(() => {}),
+      () => prisma.workspaceMember.deleteMany().catch(() => {}),
+      () => prisma.workspace.deleteMany().catch(() => {}),
+      () => prisma.embeddingItem.deleteMany().catch(() => {}),
+      () => prisma.user.deleteMany().catch(() => {}),
+    ];
+
+    // Execute all cleanup operations, ignoring errors
+    await Promise.all(cleanupOperations.map((op) => op()));
   });
+
+  // Helper function to generate unique email
+  function generateUniqueEmail(base: string): string {
+    testCounter++;
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 8);
+    const [localPart, domain] = base.split('@');
+    return `${localPart}+${testCounter}-${timestamp}-${random}@${domain}`;
+  }
 
   // Helper function to create a workspace and return workspace + user + token
   async function createWorkspaceWithUser(email: string, workspaceName: string) {
@@ -53,10 +64,11 @@ describe('AI Chat Streaming API', () => {
       throw new Error('Prisma not available');
     }
 
+    const uniqueEmail = generateUniqueEmail(email);
     const { user, accessToken } = await authRegister({
-      email,
+      email: uniqueEmail,
       password: 'password123',
-      name: email.split('@')[0],
+      name: uniqueEmail.split('@')[0],
     });
 
     const workspace = await prisma.workspace.create({

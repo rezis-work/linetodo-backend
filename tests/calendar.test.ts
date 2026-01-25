@@ -742,8 +742,10 @@ describe('Calendar API', () => {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
       tomorrow.setHours(10, 0, 0, 0);
+      // Ensure nextWeek is still in the same month to avoid month boundary issues
       const nextWeek = new Date(today);
-      nextWeek.setDate(nextWeek.getDate() + 7);
+      const daysToAdd = Math.min(7, new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() - today.getDate());
+      nextWeek.setDate(nextWeek.getDate() + daysToAdd);
       nextWeek.setHours(10, 0, 0, 0);
 
       const todo = await prisma.todo.create({

@@ -27,7 +27,11 @@ async function getOrCreateSession(
   // For GLOBAL chats, todoId must be explicitly null
   // For TASK chats, todoId must be provided
   if (chatType === 'TASK' && !todoId) {
-    throw new Error('todoId is required for TASK chat sessions');
+    const error = new Error('todoId is required for TASK chat sessions') as Error & {
+      statusCode: number;
+    };
+    error.statusCode = 400;
+    throw error;
   }
   
   const finalTodoId = chatType === 'GLOBAL' ? null : (todoId ?? null);
@@ -199,7 +203,11 @@ export async function getChatHistory(
   // For GLOBAL chats, todoId must be explicitly null
   // For TASK chats, todoId must be provided
   if (chatType === 'TASK' && !todoId) {
-    throw new Error('todoId is required for TASK chat history');
+    const error = new Error('todoId is required for TASK chat history') as Error & {
+      statusCode: number;
+    };
+    error.statusCode = 400;
+    throw error;
   }
   
   const finalTodoId = chatType === 'GLOBAL' ? null : (todoId ?? null);
@@ -253,7 +261,11 @@ export async function clearChatHistory(
   // For GLOBAL chats, todoId must be explicitly null
   // For TASK chats, todoId must be provided
   if (chatType === 'TASK' && !todoId) {
-    throw new Error('todoId is required for TASK chat history');
+    const error = new Error('todoId is required for TASK chat history') as Error & {
+      statusCode: number;
+    };
+    error.statusCode = 400;
+    throw error;
   }
   
   const finalTodoId = chatType === 'GLOBAL' ? null : (todoId ?? null);
