@@ -13,7 +13,8 @@ echo "Schema: $SCHEMA_NAME"
 if [[ "$DATABASE_URL" == *"schema="* ]]; then
   echo "Schema isolation detected - using db push instead of migrate deploy"
   # For schema isolation, use db push which syncs schema to the isolated schema
-  pnpm prisma db push --accept-data-loss --skip-generate
+  # Note: Prisma client is already generated in previous step
+  pnpm prisma db push --accept-data-loss
 else
   echo "No schema isolation - using migrate deploy"
   # For normal migrations, use migrate deploy
