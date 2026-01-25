@@ -9,6 +9,7 @@ import userRoutes from './modules/users/routes.js';
 import workspaceRoutes from './modules/workspaces/routes.js';
 import todoRoutes from './modules/todos/routes.js';
 import calendarRoutes from './modules/calendar/routes.js';
+import aiRoutes from './modules/ai/routes.js';
 
 function getCommitHash(): string | null {
   try {
@@ -76,6 +77,9 @@ export function createApp(): Express {
 
   // Calendar routes (nested under workspaces)
   app.use('/workspaces/:id/calendar', calendarRoutes);
+
+  // AI routes
+  app.use('/ai', aiRoutes);
 
   // Error handling middleware (must be last)
   app.use(errorMiddleware);

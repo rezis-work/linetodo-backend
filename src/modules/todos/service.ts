@@ -10,6 +10,7 @@ import type {
   BatchDeleteInput,
   TodoStats,
 } from './types.js';
+import { embedTodo, deleteTodoEmbedding } from '../ai/services/embedding.service.js';
 
 /**
  * Verify user is a member of the workspace
@@ -137,7 +138,7 @@ export async function createTodo(
     },
   });
 
-  return {
+  const result = {
     id: todo.id,
     workspaceId: todo.workspaceId,
     title: todo.title,
@@ -164,6 +165,11 @@ export async function createTodo(
       : null,
     _count: todo._count,
   };
+
+  // Fire and forget - don't block response
+  embedTodo(todo.id).catch(console.error);
+
+  return result;
 }
 
 /**
@@ -508,6 +514,9 @@ export async function updateTodo(
       : null,
     _count: todo._count,
   };
+
+  // Fire and forget - don't block response
+  embedTodo(todo.id).catch(console.error);
 }
 
 /**
@@ -549,6 +558,9 @@ export async function deleteTodo(workspaceId: string, todoId: string, userId: st
   await prisma.todo.delete({
     where: { id: todoId },
   });
+
+  // Fire and forget - don't block response
+  deleteTodoEmbedding(todoId).catch(console.error);
 }
 
 /**

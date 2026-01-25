@@ -37,6 +37,11 @@ enum EmbeddingSourceType {
   WORKSPACE
 }
 
+enum ChatType {
+  TASK
+  GLOBAL
+}
+
 // Models
 model User {
   id            String          @id @default(cuid())
@@ -54,6 +59,7 @@ model User {
   comments           TodoComment[]
   refreshTokens       RefreshToken[]
   embeddingItems     EmbeddingItem[]
+  chatSessions       ChatSession[]
 }
 
 model Workspace {
@@ -107,6 +113,7 @@ model Todo {
   assignee      User?         @relation("TodoAssignee", fields: [assignedToId], references: [id])
   comments      TodoComment[]
   calendarEvents CalendarEvent[]
+  chatSessions   ChatSession[]
 
   @@index([workspaceId])
   @@index([createdById])
@@ -181,4 +188,37 @@ model EmbeddingItem {
   @@index([userId])
   @@index([sourceType, sourceId])
   @@index([upstashVectorId])
+  @@unique([sourceType, sourceId])
+}
+
+model ChatSession {
+  id          String        @id @default(cuid())
+  userId      String
+  todoId      String?
+  chatType    ChatType
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relations
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  todo        Todo?         @relation(fields: [todoId], references: [id], onDelete: Cascade)
+  messages    ChatMessage[]
+
+  @@unique([userId, todoId, chatType])
+  @@index([userId])
+  @@index([todoId])
+}
+
+model ChatMessage {
+  id          String      @id @default(cuid())
+  sessionId   String
+  role        String
+  content     String
+  createdAt   DateTime    @default(now())
+
+  // Relations
+  session     ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([createdAt])
 }

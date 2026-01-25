@@ -17,6 +17,10 @@ const envSchema = z.object({
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
   JWT_ACCESS_TOKEN_EXPIRY: z.string().default('1h'),
   JWT_REFRESH_TOKEN_EXPIRY: z.string().default('30d'),
+  OPENAI_API_KEY: isTest ? z.string().optional() : z.string().min(1),
+  UPSTASH_VECTOR_REST_URL: isTest ? z.string().url().optional() : z.string().url(),
+  UPSTASH_VECTOR_REST_TOKEN: isTest ? z.string().optional() : z.string().min(1),
+  OPENAI_MODEL: z.string().default('gpt-4o-mini'),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -31,6 +35,15 @@ function validateEnv(): Env {
       }
       if (!parsed.JWT_SECRET) {
         parsed.JWT_SECRET = 'test-secret-key-for-testing-purposes-only-min-32-chars';
+      }
+      if (!parsed.OPENAI_API_KEY) {
+        parsed.OPENAI_API_KEY = '';
+      }
+      if (!parsed.UPSTASH_VECTOR_REST_URL) {
+        parsed.UPSTASH_VECTOR_REST_URL = '';
+      }
+      if (!parsed.UPSTASH_VECTOR_REST_TOKEN) {
+        parsed.UPSTASH_VECTOR_REST_TOKEN = '';
       }
     }
     return parsed;
