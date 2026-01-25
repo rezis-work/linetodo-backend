@@ -30,14 +30,19 @@ export async function embedTodo(todoId: string): Promise<void> {
 
   const vectorId = `todo:${todoId}`;
 
-  // Upsert to Upstash (auto-embeds)
-  await upsertContent(vectorId, content, {
-    type: 'TODO',
-    sourceId: todoId,
-    workspaceId: todo.workspaceId,
-    status: todo.status,
-    priority: todo.priority,
-  });
+  // Upsert to Upstash (auto-embeds) - handle errors gracefully
+  try {
+    await upsertContent(vectorId, content, {
+      type: 'TODO',
+      sourceId: todoId,
+      workspaceId: todo.workspaceId,
+      status: todo.status,
+      priority: todo.priority,
+    });
+  } catch (error) {
+    // Log but don't fail if vector service is unavailable
+    console.warn('Failed to embed todo:', error);
+  }
 
   // Track in database
   await prisma.embeddingItem.upsert({

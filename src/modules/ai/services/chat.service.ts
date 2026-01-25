@@ -36,29 +36,46 @@ async function getOrCreateSession(
   
   const finalTodoId = chatType === 'GLOBAL' ? null : (todoId ?? null);
   
-  // Use findFirst instead of findUnique for nullable composite keys
-  // Prisma's findUnique has issues with nullable fields in composite unique constraints
-  const existing = await prisma.chatSession.findFirst({
-    where: {
-      userId,
-      todoId: finalTodoId,
-      chatType: chatType as 'TASK' | 'GLOBAL',
-    },
-  });
+  try {
+    // Use findFirst instead of findUnique for nullable composite keys
+    // Prisma's findUnique has issues with nullable fields in composite unique constraints
+    const existing = await prisma.chatSession.findFirst({
+      where: {
+        userId,
+        todoId: finalTodoId,
+        chatType: chatType as 'TASK' | 'GLOBAL',
+      },
+    });
 
-  if (existing) {
-    return existing.id;
+    if (existing) {
+      return existing.id;
+    }
+
+    const session = await prisma.chatSession.create({
+      data: {
+        userId,
+        todoId: finalTodoId,
+        chatType: chatType as 'TASK' | 'GLOBAL',
+      },
+    });
+
+    return session.id;
+  } catch (error) {
+    // Handle missing table error (P2021) - table doesn't exist (migrations not run)
+    if (
+      error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      (error as { code?: string }).code === 'P2021'
+    ) {
+      const dbError = new Error('Chat service unavailable - database schema not initialized') as Error & {
+        statusCode: number;
+      };
+      dbError.statusCode = 503;
+      throw dbError;
+    }
+    throw error;
   }
-
-  const session = await prisma.chatSession.create({
-    data: {
-      userId,
-      todoId: finalTodoId,
-      chatType: chatType as 'TASK' | 'GLOBAL',
-    },
-  });
-
-  return session.id;
 }
 
 /**
@@ -85,21 +102,38 @@ async function saveMessage(
   role: 'user' | 'assistant',
   content: string
 ): Promise<{ id: string; createdAt: Date }> {
-  const message = await prisma.chatMessage.create({
-    data: {
-      sessionId,
-      role,
-      content,
-    },
-  });
+  try {
+    const message = await prisma.chatMessage.create({
+      data: {
+        sessionId,
+        role,
+        content,
+      },
+    });
 
-  // Update session timestamp
-  await prisma.chatSession.update({
-    where: { id: sessionId },
-    data: { updatedAt: new Date() },
-  });
+    // Update session timestamp
+    await prisma.chatSession.update({
+      where: { id: sessionId },
+      data: { updatedAt: new Date() },
+    });
 
-  return { id: message.id, createdAt: message.createdAt };
+    return { id: message.id, createdAt: message.createdAt };
+  } catch (error) {
+    // Handle missing table error (P2021) - table doesn't exist (migrations not run)
+    if (
+      error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      (error as { code?: string }).code === 'P2021'
+    ) {
+      const dbError = new Error('Chat service unavailable - database schema not initialized') as Error & {
+        statusCode: number;
+      };
+      dbError.statusCode = 503;
+      throw dbError;
+    }
+    throw error;
+  }
 }
 
 /**
@@ -212,42 +246,59 @@ export async function getChatHistory(
   
   const finalTodoId = chatType === 'GLOBAL' ? null : (todoId ?? null);
   
-  // Use findFirst instead of findUnique for nullable composite keys
-  // Prisma's findUnique has issues with nullable fields in composite unique constraints
-  const session = await prisma.chatSession.findFirst({
-    where: {
-      userId,
-      todoId: finalTodoId,
-      chatType: chatType as 'TASK' | 'GLOBAL',
-    },
-    include: {
-      messages: {
-        orderBy: { createdAt: 'asc' },
-        take: limit,
+  try {
+    // Use findFirst instead of findUnique for nullable composite keys
+    // Prisma's findUnique has issues with nullable fields in composite unique constraints
+    const session = await prisma.chatSession.findFirst({
+      where: {
+        userId,
+        todoId: finalTodoId,
+        chatType: chatType as 'TASK' | 'GLOBAL',
       },
-    },
-  });
+      include: {
+        messages: {
+          orderBy: { createdAt: 'asc' },
+          take: limit,
+        },
+      },
+    });
 
-  if (!session) {
-    return null;
+    if (!session) {
+      return null;
+    }
+
+    // Type assertion needed because Prisma's include type inference can be incomplete
+    const sessionWithMessages = session as typeof session & {
+      messages: Array<{ id: string; role: string; content: string; createdAt: Date }>;
+    };
+
+    return {
+      sessionId: sessionWithMessages.id,
+      chatType: sessionWithMessages.chatType as 'TASK' | 'GLOBAL',
+      todoId: sessionWithMessages.todoId,
+      messages: sessionWithMessages.messages.map((m) => ({
+        id: m.id,
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+        createdAt: m.createdAt,
+      })),
+    };
+  } catch (error) {
+    // Handle missing table error (P2021) - table doesn't exist (migrations not run)
+    if (
+      error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      (error as { code?: string }).code === 'P2021'
+    ) {
+      const dbError = new Error('Chat service unavailable - database schema not initialized') as Error & {
+        statusCode: number;
+      };
+      dbError.statusCode = 503;
+      throw dbError;
+    }
+    throw error;
   }
-
-  // Type assertion needed because Prisma's include type inference can be incomplete
-  const sessionWithMessages = session as typeof session & {
-    messages: Array<{ id: string; role: string; content: string; createdAt: Date }>;
-  };
-
-  return {
-    sessionId: sessionWithMessages.id,
-    chatType: sessionWithMessages.chatType as 'TASK' | 'GLOBAL',
-    todoId: sessionWithMessages.todoId,
-    messages: sessionWithMessages.messages.map((m) => ({
-      id: m.id,
-      role: m.role as 'user' | 'assistant',
-      content: m.content,
-      createdAt: m.createdAt,
-    })),
-  };
 }
 
 /**
@@ -270,13 +321,30 @@ export async function clearChatHistory(
   
   const finalTodoId = chatType === 'GLOBAL' ? null : (todoId ?? null);
   
-  await prisma.chatSession.deleteMany({
-    where: {
-      userId,
-      todoId: finalTodoId,
-      chatType: chatType as 'TASK' | 'GLOBAL',
-    },
-  });
+  try {
+    await prisma.chatSession.deleteMany({
+      where: {
+        userId,
+        todoId: finalTodoId,
+        chatType: chatType as 'TASK' | 'GLOBAL',
+      },
+    });
+  } catch (error) {
+    // Handle missing table error (P2021) - table doesn't exist (migrations not run)
+    if (
+      error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      (error as { code?: string }).code === 'P2021'
+    ) {
+      const dbError = new Error('Chat service unavailable - database schema not initialized') as Error & {
+        statusCode: number;
+      };
+      dbError.statusCode = 503;
+      throw dbError;
+    }
+    throw error;
+  }
 }
 
 /**

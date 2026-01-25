@@ -34,12 +34,24 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Set test database URL (isolated schema)
         run: |
-          echo "DATABASE_URL=${{ secrets.TEST_DATABASE_URL }}&schema=ci_${{ github.run_id }}_${{ github.run_attempt }}" >> $GITHUB_ENV
-          echo "TEST_DATABASE_URL=${{ secrets.TEST_DATABASE_URL }}&schema=ci_${{ github.run_id }}_${{ github.run_attempt }}" >> $GITHUB_ENV
+          SCHEMA_NAME="ci_${{ github.run_id }}_${{ github.run_attempt }}"
+          echo "SCHEMA_NAME=$SCHEMA_NAME" >> $GITHUB_ENV
+          DB_URL_WITH_SCHEMA="${{ secrets.TEST_DATABASE_URL }}&schema=$SCHEMA_NAME"
+          echo "DATABASE_URL=$DB_URL_WITH_SCHEMA" >> $GITHUB_ENV
+          echo "TEST_DATABASE_URL=$DB_URL_WITH_SCHEMA" >> $GITHUB_ENV
       - name: Generate Prisma client
         run: pnpm prisma:generate
-      - name: Sync Prisma schema to test DB
-        run: pnpm prisma db push --accept-data-loss
+      - name: Setup PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+      - name: Create isolated schema
+        run: |
+          # Create the isolated schema if it doesn't exist
+          BASE_URL="${{ secrets.TEST_DATABASE_URL }}"
+          psql "$BASE_URL" -c "CREATE SCHEMA IF NOT EXISTS \"$SCHEMA_NAME\";" || echo "Schema creation skipped (may already exist)"
+      - name: Run database migrations/schema sync
+        run: bash scripts/ci-migrate.sh
       - name: Run tests
         run: pnpm test
 

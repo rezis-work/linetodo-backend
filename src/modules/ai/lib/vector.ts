@@ -4,10 +4,11 @@ import type { VectorMetadata } from '../types.js';
 
 let vectorIndex: Index | null = null;
 
-function getIndex(): Index {
+function getIndex(): Index | null {
   if (!vectorIndex) {
     if (!env.UPSTASH_VECTOR_REST_URL || !env.UPSTASH_VECTOR_REST_TOKEN) {
-      throw new Error('Upstash Vector credentials not configured');
+      // Return null instead of throwing - allows graceful degradation
+      return null;
     }
     vectorIndex = new Index({
       url: env.UPSTASH_VECTOR_REST_URL,
@@ -26,6 +27,10 @@ export async function upsertContent(
   metadata: VectorMetadata
 ): Promise<void> {
   const index = getIndex();
+  if (!index) {
+    // Vector service not configured - skip silently
+    return;
+  }
   await index.upsert({
     id,
     data: content,
@@ -42,6 +47,10 @@ export async function searchSimilar(
   filter?: string
 ): Promise<Array<{ id: string; score: number; metadata?: VectorMetadata }>> {
   const index = getIndex();
+  if (!index) {
+    // Vector service not configured - return empty results
+    return [];
+  }
   const results = await index.query({
     data: query,
     topK,
@@ -61,6 +70,10 @@ export async function searchSimilar(
  */
 export async function deleteVector(id: string): Promise<void> {
   const index = getIndex();
+  if (!index) {
+    // Vector service not configured - skip silently
+    return;
+  }
   await index.delete(id);
 }
 
@@ -69,6 +82,10 @@ export async function deleteVector(id: string): Promise<void> {
  */
 export async function deleteVectors(ids: string[]): Promise<void> {
   const index = getIndex();
+  if (!index) {
+    // Vector service not configured - skip silently
+    return;
+  }
   await index.delete(ids);
 }
 
